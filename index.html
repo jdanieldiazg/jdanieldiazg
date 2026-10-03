@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Motor PWA</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1e293b">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 min-h-screen flex items-center justify-center text-slate-100 p-4">
+
+    <div class="bg-slate-800 p-8 rounded-2xl shadow-xl max-w-md w-full text-center border border-slate-700">
+        <div class="text-5xl mb-4">⚙️</div>
+        <h1 class="text-2xl font-bold mb-2">Motor PWA Local</h1>
+        <p class="text-slate-400 text-sm mb-8">Sube tu archivo HTML con la lógica del simulador. La app lo guardará y lo ejecutará offline.</p>
+
+        <!-- Botón para entrar si ya hay una app instalada -->
+        <a id="btn-open" href="/app-local" class="hidden block w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl mb-4 transition">
+            ▶️ Iniciar Simulador Guardado
+        </a>
+
+        <!-- Botón para subir/actualizar el HTML -->
+        <label class="block w-full cursor-pointer bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl transition shadow-sm">
+            <span id="upload-text">Subir o Actualizar HTML</span>
+            <input type="file" id="file-input" accept=".html" class="hidden">
+        </label>
+    </div>
+
+    <script>
+        // Registrar Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+
+        // Comprobar si ya tenemos un HTML guardado en el servidor virtual
+        caches.open('virtual-app-cache').then(cache => {
+            cache.match('/app-local').then(response => {
+                if (response) {
+                    document.getElementById('btn-open').classList.remove('hidden');
+                    document.getElementById('upload-text').textContent = "🔄 Actualizar a nueva versión";
+                }
+            });
+        });
+
+        // Lógica de inyección: Al subir el archivo, lo guardamos en la Caché
+        document.getElementById('file-input').addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const htmlText = await file.text();
+            
+            // Creamos una respuesta HTTP virtual con tu HTML
+            const response = new Response(htmlText, {
+                headers: { 'Content-Type': 'text/html; charset=utf-8' }
+            });
+
+            // Lo metemos en la caché del servidor virtual
+            const cache = await caches.open('virtual-app-cache');
+            await cache.put('/app-local', response);
+
+            // Redirigimos a la ruta virtual (el SW la interceptará)
+            window.location.href = '/app-local';
+        });
+    </script>
+</body>
+</html>
