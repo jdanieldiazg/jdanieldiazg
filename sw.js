@@ -1,4 +1,4 @@
-const SHELL_CACHE = 'pwa-shell-v1';
+const SHELL_CACHE = 'pwa-shell-v2';
 const ASSETS = [
     './',
     './index.html',
@@ -11,28 +11,38 @@ self.addEventListener('install', e => {
 });
 
 self.addEventListener('activate', e => {
+    // Borra cachés antiguas de versiones previas del cascarón (pero mantiene tu simulador virtual)
+    e.waitUntil(
+        caches.keys().then(keys => Promise.all(
+            keys.map(k => {
+                if (k !== SHELL_CACHE && k !== 'virtual-app-cache') {
+                    return caches.delete(k);
+                }
+            })
+        ))
+    );
     self.clients.claim();
 });
 
 self.addEventListener('fetch', e => {
     const url = new URL(e.request.url);
 
-    // AQUÍ ESTÁ LA MAGIA: Interceptar nuestra ruta virtual
-    if (url.pathname.endsWith('/app-local')) {
+    // AQUÍ ESTÁ LA MAGIA CORREGIDA: Interceptar mediante parámetro seguro
+    if (url.searchParams.get('app') === 'local') {
         e.respondWith(
             caches.open('virtual-app-cache').then(cache => {
-                return cache.match('/app-local').then(response => {
+                return cache.match('virtual-html').then(response => {
                     // Si existe el HTML inyectado, lo devolvemos
                     if (response) return response;
-                    // Si no, devolvemos al usuario a la pantalla de instalación
-                    return Response.redirect('./');
+                    // Si no, devolvemos al usuario al index normal
+                    return Response.redirect('index.html');
                 });
             })
         );
-        return; // Detener ejecución para esta ruta
+        return; 
     }
 
-    // Para el resto de archivos (index.html, manifest), usar caché normal
+    // Para el resto de archivos, usar caché normal
     e.respondWith(
         caches.match(e.request).then(res => res || fetch(e.request))
     );

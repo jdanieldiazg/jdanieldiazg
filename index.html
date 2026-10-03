@@ -15,8 +15,8 @@
         <h1 class="text-2xl font-bold mb-2">Motor PWA Local</h1>
         <p class="text-slate-400 text-sm mb-8">Sube tu archivo HTML con la lógica del simulador. La app lo guardará y lo ejecutará offline.</p>
 
-        <!-- Botón para entrar si ya hay una app instalada -->
-        <a id="btn-open" href="/app-local" class="hidden block w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl mb-4 transition">
+        <!-- Botón para entrar si ya hay una app instalada (Usa el parámetro ?app=local) -->
+        <a id="btn-open" href="?app=local" class="hidden block w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl mb-4 transition shadow-md">
             ▶️ Iniciar Simulador Guardado
         </a>
 
@@ -35,7 +35,7 @@
 
         // Comprobar si ya tenemos un HTML guardado en el servidor virtual
         caches.open('virtual-app-cache').then(cache => {
-            cache.match('/app-local').then(response => {
+            cache.match('virtual-html').then(response => {
                 if (response) {
                     document.getElementById('btn-open').classList.remove('hidden');
                     document.getElementById('upload-text').textContent = "🔄 Actualizar a nueva versión";
@@ -43,7 +43,7 @@
             });
         });
 
-        // Lógica de inyección: Al subir el archivo, lo guardamos en la Caché
+        // Lógica de inyección: Al subir el archivo, lo guardamos en la Caché con una llave estática
         document.getElementById('file-input').addEventListener('change', async function(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -57,10 +57,10 @@
 
             // Lo metemos en la caché del servidor virtual
             const cache = await caches.open('virtual-app-cache');
-            await cache.put('/app-local', response);
+            await cache.put('virtual-html', response);
 
-            // Redirigimos a la ruta virtual (el SW la interceptará)
-            window.location.href = '/app-local';
+            // Redirigimos usando el parámetro seguro
+            window.location.href = '?app=local';
         });
     </script>
 </body>
